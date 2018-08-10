@@ -35,7 +35,6 @@ class Scenario(BaseScenario):
         self.reset_world(world)
         return world
 
-
     def reset_world(self, world):
         # random properties for agents
         for i, agent in enumerate(world.agents):
@@ -53,7 +52,6 @@ class Scenario(BaseScenario):
                 landmark.state.p_pos = np.random.uniform(-0.9, +0.9, world.dim_p)
                 landmark.state.p_vel = np.zeros(world.dim_p)
 
-
     def benchmark_data(self, agent, world):
         # returns data for benchmarking purposes
         if agent.adversary:
@@ -65,21 +63,19 @@ class Scenario(BaseScenario):
         else:
             return 0
 
-
     def is_collision(self, agent1, agent2):
         delta_pos = agent1.state.p_pos - agent2.state.p_pos
         dist = np.sqrt(np.sum(np.square(delta_pos)))
         dist_min = agent1.size + agent2.size
         return True if dist < dist_min else False
 
-    # return all agents that are not adversaries
     def good_agents(self, world):
+        # return all agents that are not adversaries
         return [agent for agent in world.agents if not agent.adversary]
 
-    # return all adversarial agents
     def adversaries(self, world):
+        # return all adversarial agents
         return [agent for agent in world.agents if agent.adversary]
-
 
     def reward(self, agent, world):
         # Agents are rewarded based on minimum agent distance to each landmark
@@ -106,6 +102,7 @@ class Scenario(BaseScenario):
             if x < 1.0:
                 return (x - 0.9) * 10
             return min(np.exp(2 * x - 2), 10)
+
         for p in range(world.dim_p):
             x = abs(agent.state.p_pos[p])
             rew -= bound(x)
