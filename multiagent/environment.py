@@ -4,11 +4,13 @@ from gym.envs.registration import EnvSpec
 import numpy as np
 from multiagent.multi_discrete import MultiDiscrete
 
-# environment for all agents in the multiagent world
-# currently code assumes that no agents will be created/destroyed at runtime!
+
 class MultiAgentEnv(gym.Env):
+    """Environment for all agents in the multi-agent world, currently
+    code assumes that no agents will be created/destroyed at runtime!"""
+
     metadata = {
-        'render.modes' : ['human', 'rgb_array']
+        'render.modes': ['human', 'rgb_array']
     }
 
     def __init__(self, world, reset_callback=None, reward_callback=None,
@@ -47,6 +49,7 @@ class MultiAgentEnv(gym.Env):
                 u_action_space = spaces.Box(low=-agent.u_range, high=+agent.u_range, shape=(world.dim_p,), dtype=np.float32)
             if agent.movable:
                 total_action_space.append(u_action_space)
+
             # communication action space
             if self.discrete_action_space:
                 c_action_space = spaces.Discrete(world.dim_c)
@@ -54,6 +57,7 @@ class MultiAgentEnv(gym.Env):
                 c_action_space = spaces.Box(low=0.0, high=1.0, shape=(world.dim_c,), dtype=np.float32)
             if not agent.silent:
                 total_action_space.append(c_action_space)
+
             # total action space
             if len(total_action_space) > 1:
                 # all action spaces are discrete, so simplify to MultiDiscrete action space
@@ -104,7 +108,8 @@ class MultiAgentEnv(gym.Env):
         return obs_n, reward_n, done_n, info_n
 
     def reset(self):
-        # reset world
+        """Reset world"""
+
         self.reset_callback(self.world)
         # reset renderer
         self._reset_render()
@@ -115,33 +120,36 @@ class MultiAgentEnv(gym.Env):
             obs_n.append(self._get_obs(agent))
         return obs_n
 
-    # get info used for benchmarking
     def _get_info(self, agent):
+        """Get info used for benchmarking"""
         if self.info_callback is None:
             return {}
         return self.info_callback(agent, self.world)
 
-    # get observation for a particular agent
     def _get_obs(self, agent):
+        """Get observation for a particular agent"""
         if self.observation_callback is None:
             return np.zeros(0)
         return self.observation_callback(agent, self.world)
 
-    # get dones for a particular agent
-    # unused right now -- agents are allowed to go beyond the viewing screen
     def _get_done(self, agent):
+        """Get dones for a particular agent, unused right now --
+        agents are allowed to go beyond the viewing screen
+        """
+
         if self.done_callback is None:
             return False
         return self.done_callback(agent, self.world)
 
-    # get reward for a particular agent
     def _get_reward(self, agent):
+        """Get reward for a particular agent"""
         if self.reward_callback is None:
             return 0.0
         return self.reward_callback(agent, self.world)
 
-    # set env action for a particular agent
     def _set_action(self, action, agent, action_space, time=None):
+        """Set env action for a particular agent"""
+
         agent.action.u = np.zeros(self.world.dim_p)
         agent.action.c = np.zeros(self.world.dim_c)
         # process action
@@ -191,13 +199,15 @@ class MultiAgentEnv(gym.Env):
         # make sure we used all elements of action
         assert len(action) == 0
 
-    # reset rendering assets
     def _reset_render(self):
+        """Reset rendering assets"""
+
         self.render_geoms = None
         self.render_geoms_xform = None
 
-    # render environment
     def render(self, mode='human'):
+        """Render environment"""
+
         if mode == 'human':
             alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
             message = ''
@@ -258,12 +268,13 @@ class MultiAgentEnv(gym.Env):
             for e, entity in enumerate(self.world.entities):
                 self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
             # render to display or array
-            results.append(self.viewers[i].render(return_rgb_array = mode=='rgb_array'))
+            results.append(self.viewers[i].render(return_rgb_array=(mode == 'rgb_array')))
 
         return results
 
-    # create receptor field locations in local coordinate frame
     def _make_receptor_locations(self, agent):
+        """Create receptor field locations in local coordinate frame"""
+
         receptor_type = 'polar'
         range_min = 0.05 * 2.0
         range_max = 1.00

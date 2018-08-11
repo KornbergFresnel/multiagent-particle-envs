@@ -8,14 +8,14 @@ class Scenario(BaseScenario):
         super().__init__()
 
     def make_world(self, **kwargs):
-        """ Generate a world instant
+        """ Generate a world instance
 
-        :param kwargs, includes {'world_dim_c', 'num_agents', 'num_landmarks', 'num_adversaries'}
-        :return: world, World, the world instant
+        :param kwargs: dict, includes {'world_dim_c', 'num_agents', 'num_landmarks', 'num_adversaries'}
+        :return: world, World, the world instance
         """
 
         world = World()
-        world.dim_c = kwrags['world_dim_c']  # set communication channel size
+        world.dim_c = kwargs['world_dim_c']  # set communication channel size
         num_agents = kwargs['num_agents']  # set the number of agents
         num_landmarks = kwargs['num_landmarks']  # set the number of landmarks
         num_adversaries = kwargs['num_adversaries']  # set the number of adversaries
@@ -97,7 +97,8 @@ class Scenario(BaseScenario):
         comm = []
         other_pos = []
         for other in world.agents:
-            if other is agent: continue
+            if other is agent:
+                continue
             comm.append(other.state.c)
             other_pos.append(other.state.p_pos - agent.state.p_pos)
         if not agent.adversary:

@@ -13,15 +13,12 @@ from multiagent.policy import InteractivePolicy
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
-    parser.add_argument('-s', '--scenario', default='simple_push.py', help='Path of the scenario Python script.')
-    parser.add_argument('--n_agent', type=int, default=2, help='Set the number of agents')
-    parser.add_argument('--n_adv', type=int, default=0, help='Define how many adversary agents among the total agents')
-    parser.add_argument('--comm', action='store_true', help='Use communication action or not.')
-    parser.add_argument('--train', action='store_true', help='Train or not')
+    parser.add_argument('-s', '--scenario', default='push_ball.py', help='Path of the scenario Python script.')
+    parser.add_argument('-n', '--n_agent', type=int, default=2, help='Set the number of agents')
     args = parser.parse_args()
 
     scenario = scenarios.load(args.scenario).Scenario()  # load scenario from script
-    world = scenario.make_world()  # create world instant
+    world = scenario.make_world(num_agents=args.n_agent)  # create world instant
     # create multi-agent environment
     env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None,
                         shared_viewer=False)
@@ -31,6 +28,7 @@ if __name__ == '__main__':
     policies = [InteractivePolicy(env, i) for i in range(env.n)]
     # execution loop
     obs_n = env.reset()
+
     while True:
         # query for action from each agent's policy
         act_n = []

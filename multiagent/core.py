@@ -151,6 +151,11 @@ class World(object):
 
     # gather agent action forces
     def apply_action_force(self, p_force):
+        """ Gather agent action forces
+
+        :param p_force: list, for forces storage
+        :return: list, the p_force
+        """
         # set applied forces
         for i, agent in enumerate(self.agents):
             if agent.movable:
@@ -179,21 +184,27 @@ class World(object):
                     p_force[b] = f_b + p_force[b]        
         return p_force
 
-    # integrate physical state
     def integrate_state(self, p_force):
+        """ Integrate physical state
+
+        :param p_force: list, for each entities
+        """
+
         for i, entity in enumerate(self.entities):
             if not entity.movable:
                 continue
-            entity.state.p_vel = entity.state.p_vel * (1 - self.damping)
+
+            entity.state.p_vel = entity.state.p_vel * (1 - self.damping)  # velocity decay
 
             if p_force[i] is not None:
                 entity.state.p_vel += (p_force[i] / entity.mass) * self.dt
 
-            if entity.max_speed is not None:
+            if entity.max_speed is not None:  # speed rectify
                 speed = np.sqrt(np.square(entity.state.p_vel[0]) + np.square(entity.state.p_vel[1]))
                 if speed > entity.max_speed:
-                    entity.state.p_vel = entity.state.p_vel / np.sqrt(np.square(entity.state.p_vel[0]) +
-                                                                  np.square(entity.state.p_vel[1])) * entity.max_speed
+                    # entity.state.p_vel = entity.state.p_vel / np.sqrt(np.square(entity.state.p_vel[0]) +
+                    #                                               np.square(entity.state.p_vel[1])) * entity.max_speed
+                    entity.state.p_vel = entity.state.p_vel / speed * entity.max_speed
             entity.state.p_pos += entity.state.p_vel * self.dt
 
     def update_agent_state(self, agent):
@@ -206,8 +217,14 @@ class World(object):
                 noise = np.random.randn(*agent.action.c.shape) * agent.c_noise if agent.c_noise else 0.0
                 agent.state.c = agent.action.c + noise
 
-    # get collision forces for any contact between two entities
     def get_collision_force(self, entity_a, entity_b):
+        """ Get collision forces for any contact between two entities, entity_a collide entity_b
+
+        :param entity_a: Entity, agent or landmark
+        :param entity_b: Entity, agent or landmark
+        :return: list, include two forces of entity_a and entity_b
+        """
+
         if not entity_a.collide or not entity_b.collide:
             return [None, None]  # not a collider
         if entity_a is entity_b:
@@ -215,11 +232,11 @@ class World(object):
 
         # compute actual distance between entities
         delta_pos = entity_a.state.p_pos - entity_b.state.p_pos
-        dist = np.sqrt(np.sum(np.square(delta_pos)))
+        dist = np.sqrt(np.sum(delta_pos ** 2))
         dist_min = entity_a.size + entity_b.size  # minimum allowable distance
 
         k = self.contact_margin  # SoftMax penetration
-        penetration = np.logaddexp(0, -(dist - dist_min)/k)*k
+        penetration = np.logaddexp(0, -(dist - dist_min) / k) * k
 
         force = self.contact_force * delta_pos / dist * penetration
         force_a = +force if entity_a.movable else None
