@@ -22,24 +22,30 @@ class Scenario(BaseScenario):
         
         world = World()
         num_agents = kwargs['num_agents']
-        num_landmarks = 1
+        num_landmarks = 2
 
         world.agents = [Agent() for _ in range(num_agents)]
         for i, agent in enumerate(world.agents):
-            assert isinstance(agent, Agent)
-            agent.name = 'push_ball_agent_%d' % i
+            agent.name = 'agent_%d' % i
             agent.collide = True
             agent.silent = True
             agent.color = np.array([0.75, 0.75, 0.75])
         
         # here the landmark is the ball needs to be pushed
         world.landmarks = [Landmark() for _ in range(num_landmarks)]
-        for i, landmark in enumerate(world.landmarks):
-            assert isinstance(landmark, Landmark)
-            landmark.name = 'push_ball_ball_%d' % i
-            landmark.collide = True
-            landmark.movable = True
-        
+        ball, target = world.landmarks
+
+        ball.name = 'BALL'
+        ball.collide = True
+        ball.movable = True
+        ball.color = np.array([229/255, 132/255, 129/255])
+        ball.size *= 4.5
+
+        target.name = 'TARGET'
+        target.collide = False
+        target.movable = False
+        target.color = np.array([0.1, 0.1, 0.1])
+
         self.reset_world(world)
         return world
     
@@ -47,16 +53,11 @@ class Scenario(BaseScenario):
         """Random initialize the world"""
 
         for i, landmark in enumerate(world.landmarks):
-            assert isinstance(landmark, Landmark)
-            landmark.color = np.array([0.1, 0.1, 0.1])
-            landmark.index = i
             landmark.state.p_pos = np.random.uniform(-1, 1, world.dim_p)
             landmark.state.p_vel = np.zeros(world.dim_p)
         
         # in this scenario, we set only one landmark as the target location
-        # need to avoid the ball
         for i, agent in enumerate(world.agents):
-            assert isinstance(agent, Agent)
             agent.state.p_pos = np.random.uniform(-1, 1, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
 

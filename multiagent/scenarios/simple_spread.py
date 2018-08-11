@@ -4,7 +4,7 @@ from multiagent.scenario import BaseScenario
 
 
 class Scenario(BaseScenario):
-    def make_world(self):
+    def make_world(self, **kwargs):
         world = World()
         # set any world properties first
         world.dim_c = 2
@@ -61,7 +61,6 @@ class Scenario(BaseScenario):
                     rew -= 1
                     collisions += 1
         return (rew, collisions, min_dists, occupied_landmarks)
-
 
     def is_collision(self, agent1, agent2):
         delta_pos = agent1.state.p_pos - agent2.state.p_pos
