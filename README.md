@@ -3,6 +3,10 @@
 A simple multi-agent particle world with a continuous observation and discrete action space, along with some basic simulated physics.
 Used in the paper [Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments](https://arxiv.org/pdf/1706.02275.pdf).
 
+## More details about the kernel
+
+[Multi-Agent-particle-envs](https://github.com/openai/multiagent-particle-envs)
+
 ## Getting started:
 
 - To install, `cd` into the root directory and type `pip install -e .`
@@ -28,10 +32,7 @@ You can create new scenarios by implementing the first 4 functions above (`make_
 | `simple_spread.py` (Cooperative navigation) | N | N | N agents, N landmarks. Agents are rewarded based on how far any agent is from each landmark. Agents are penalized if they collide with other agents. So, agents have to learn to cover all the landmarks while avoiding collisions. |
 | `simple_tag.py` (Predator-prey) | N | Y | Predator-prey environment. Good agents (green) are faster and want to avoid being hit by adversaries (red). Adversaries are slower and want to hit good agents. Obstacles (large black circles) block the way. |
 | `simple_world_comm.py` | Y | Y | Environment seen in the video accompanying the paper. Same as simple_tag, except (1) there is food (small blue balls) that the good agents are rewarded for being near, (2) we now have ‘forests’ that hide agents inside from being seen from outside; (3) there is a ‘leader adversary” that can see the agents at all times, and can communicate with the other adversaries to help coordinate the chase. |
-
-## More details about the kernel
-
-[Multi-Agent-particle-envs](https://github.com/openai/multiagent-particle-envs)
+| `push_ball.py` | N | N | A cooperative scenario called push_ball. There are several agents and one big ball, all agents need to cooperate to push the ball to the target location by collision. |
 
 ## Paper citation
 
