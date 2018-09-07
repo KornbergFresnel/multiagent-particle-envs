@@ -3,6 +3,11 @@
 A simple multi-agent particle world with a continuous observation and discrete action space, along with some basic simulated physics.
 Used in the paper [Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments](https://arxiv.org/pdf/1706.02275.pdf).
 
+**Latest Changes**
+
+- Create a new scenario which called *Push Ball*, listed in the environment list
+- Create a new scenario which called *Battle*, a python implementation of [Battle of MAgent](https://github.com/geek-ai/MAgent), listed in the environment list
+
 ## More details about the kernel
 
 [Multi-Agent-particle-envs](https://github.com/openai/multiagent-particle-envs)
