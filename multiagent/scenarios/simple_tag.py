@@ -21,7 +21,7 @@ class Scenario(BaseScenario):
             agent.adversary = True if i < num_adversaries else False
             agent.size = 0.075 if agent.adversary else 0.05
             agent.accel = 3.0 if agent.adversary else 4.0
-            #agent.accel = 20.0 if agent.adversary else 25.0
+            # agent.accel = 20.0 if agent.adversary else 25.0
             agent.max_speed = 1.0 if agent.adversary else 1.3
         # add landmarks
         world.landmarks = [Landmark() for i in range(num_landmarks)]
@@ -136,7 +136,8 @@ class Scenario(BaseScenario):
         other_pos = []
         other_vel = []
         for other in world.agents:
-            if other is agent: continue
+            if other is agent:
+                continue
             comm.append(other.state.c)
             other_pos.append(other.state.p_pos - agent.state.p_pos)
             if not other.adversary:
