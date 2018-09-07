@@ -36,7 +36,7 @@ class Entity(object):
     """Properties and state of physical world entity"""
 
     def __init__(self):
-        # name 
+        # name
         self.name = ''
         # properties:
         self.size = 0.050
@@ -91,6 +91,8 @@ class Agent(Entity):
         self.action = Action()
         # script behavior to execute
         self.action_callback = None
+        # optional replay buffer
+        self.replay_buffer = None
 
 
 class World(object):
@@ -134,7 +136,7 @@ class World(object):
 
     def step(self):
         """Update state of the world"""
-        # set actions for scripted agents 
+        # set actions for scripted agents
         for agent in self.scripted_agents:
             agent.action = agent.action_callback(agent, self)
         # gather forces applied to entities
@@ -153,14 +155,19 @@ class World(object):
     def apply_action_force(self, p_force):
         """ Gather agent action forces
 
-        :param p_force: list, for forces storage
-        :return: list, the p_force
+        Parameters
+        ----------
+        p_force: list, for forces storage
+
+        Returns
+        -------
+        list, the p_force
         """
         # set applied forces
         for i, agent in enumerate(self.agents):
             if agent.movable:
                 noise = np.random.randn(*agent.action.u.shape) * agent.u_noise if agent.u_noise else 0.0
-                p_force[i] = agent.action.u + noise                
+                p_force[i] = agent.action.u + noise
         return p_force
 
     def apply_environment_force(self, p_force):
@@ -181,13 +188,15 @@ class World(object):
                 if f_b is not None:
                     if p_force[b] is None:
                         p_force[b] = 0.0
-                    p_force[b] = f_b + p_force[b]        
+                    p_force[b] = f_b + p_force[b]
         return p_force
 
     def integrate_state(self, p_force):
         """ Integrate physical state
 
-        :param p_force: list, for each entities
+        Parameters
+        ----------
+        p_force: list, for each entities
         """
 
         for i, entity in enumerate(self.entities):
@@ -218,11 +227,16 @@ class World(object):
                 agent.state.c = agent.action.c + noise
 
     def get_collision_force(self, entity_a, entity_b):
-        """ Get collision forces for any contact between two entities, entity_a collide entity_b
+        """Get collision forces for any contact between two entities, entity_a collide entity_b
 
-        :param entity_a: Entity, agent or landmark
-        :param entity_b: Entity, agent or landmark
-        :return: list, include two forces of entity_a and entity_b
+        Parameters
+        ----------
+        entity_a: Entity, agent or landmark
+        entity_b: Entity, agent or landmark
+
+        Returns
+        -------
+        list, include two forces of entity_a and entity_b
         """
 
         if not entity_a.collide or not entity_b.collide:
@@ -241,5 +255,79 @@ class World(object):
         force = self.contact_force * delta_pos / dist * penetration
         force_a = +force if entity_a.movable else None
         force_b = -force if entity_b.movable else None
+
+        return [force_a, force_b]
+
+
+class DynamicWorld(World):
+    def __init__(self):
+        super().__init__()
+        del self.agents
+        self.group = []
+
+    @property
+    def agents(self):
+        """View of agents"""
+        return list(self.group[0].values()) + list(self.group[1].values())
+
+    @property
+    def entities(self):
+        return list(self.group[0].values()) + list(self.group[1].values()) + self.landmarks
+
+    def apply_environment_force(self, p_force):
+        """Gather physical forces acting on entities, and ignore collision force
+        between agents which belong to the same group
+        """
+
+        for a, entity_a in enumerate(self.entities):
+            for b, entity_b in enumerate(self.entities):
+                if b <= a or entity_a.index == entity_b.index:
+                    continue
+
+                [f_a, f_b] = self.get_collision_force(entity_a, entity_b)
+
+                if f_a is not None:
+                    if p_force[a] is None:
+                        p_force[a] = 0.0
+                    p_force[a] = f_a + p_force[a]
+
+                if f_b is not None:
+                    if p_force[b] is None:
+                        p_force[b] = 0.0
+                    p_force[b] = f_b + p_force[b]
+        return p_force
+
+    def get_collision_force(self, entity_a: Entity, entity_b: Entity):
+        """Get collision forces and both update the hp
+        """
+
+        if not entity_a.collide or not entity_b.collide:
+            return [None, None]
+
+        if entity_a is entity_b:
+            return [None, None]
+
+        delta_pos = entity_a.state.p_pos - entity_b.state.p_pos
+        dist = np.sqrt(np.sum(np.square(delta_pos ** 2)))
+        dist_min = entity_a.size + entity_b.size
+
+        k = self.contact_margin
+        penetration = np.logaddexp(0, -(dist - dist_min) / k) * k
+
+        force = self.contact_force * delta_pos / dist * penetration
+
+        force = self.contact_force * delta_pos / dist * penetration
+        force_a = +force if entity_a.movable else None
+        force_b = -force if entity_b.movable else None
+
+        # focus on each of these two agents, if the focused agent move to the another agent,
+        # and caused collide, we treat this movement as a attack, then the attacked agent will
+        # loss some health point: 0.01
+        pos_dir = delta_pos
+        if np.all(pos_dir * entity_a.state.p_vel > 0):
+            entity_b.hp -= entity_a.attack_value
+
+        if np.all(-pos_dir * entity_b.state.p_vel > 0):
+            entity_a.hp -= entity_b.attack_value
 
         return [force_a, force_b]
