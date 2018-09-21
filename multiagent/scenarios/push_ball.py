@@ -77,11 +77,19 @@ class Scenario(BaseScenario):
 
     def reward(self, agent: Agent, world: World):
         """Get reward"""
+        reshaping = True
+        alpha = 2.0
+
         ball = world.landmarks[0]
         location = world.target_location
         # judge the distance of ball and target location
         distance = np.sqrt(np.sum((ball.state.p_pos - location) ** 2))
-        return 1.0 if distance <= self._dist_limit else 0.0
+
+        reward = self._last_distance - distance
+
+        if reshaping:
+            reward *= alpha
+        return reward
 
     def observation(self, agent: Agent, world: World):
         """Get observation of agent"""
