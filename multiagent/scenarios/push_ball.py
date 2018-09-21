@@ -13,7 +13,7 @@ class Scenario(BaseScenario):
         super().__init__()
         self._dist_limit = 1e-4
         self._agent_size = 1.
-        self._agent_shaping = 0.1
+        self._agent_shaping = 0.08
 
     def make_world(self, **kwargs):
         """Generate a world instance
@@ -40,9 +40,9 @@ class Scenario(BaseScenario):
         ball.name = 'BALL'
         ball.collide = True
         ball.movable = True
-        ball.color = np.array([229/255, 132/255, 129/255])
-        ball.size *= 4.0
-        ball.initial_mass *= 100
+        ball.color = np.array([229 / 255, 132 / 255, 129 / 255])
+        ball.size *= 8.0
+        ball.initial_mass *= 144
 
         self._agent_size = ball.size * self._agent_shaping
 
@@ -56,10 +56,12 @@ class Scenario(BaseScenario):
 
     def reset_world(self, world: World):
         """Random initialize the world"""
+        cam_range = 2
 
         for i, landmark in enumerate(world.landmarks):
             size = landmark.size
-            landmark.state.p_pos = np.random.uniform(-1 + size, 1 - size, world.dim_p)
+            landmark.state.p_pos = np.random.uniform(
+                -cam_range + size, cam_range - size, world.dim_p)
             landmark.state.p_vel = np.zeros(world.dim_p)
 
         world.landmarks[1].state.p_pos = np.array([0., 0.])
@@ -68,12 +70,15 @@ class Scenario(BaseScenario):
         # in this scenario, we set only one landmark as the target location
         for i, agent in enumerate(world.agents):
             size = agent.size
-            agent.state.p_pos = np.random.uniform(-1 + size, 1 - size, world.dim_p)
+            agent.state.p_pos = np.random.uniform(
+                -cam_range + size, cam_range - size, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
             agent.size = self._agent_size
 
         world.target_location = np.array([0., 0.])
         world.collaborative = True
+        self._last_distance = np.sqrt(np.sum(
+            np.square(world.landmarks[0].state.p_pos - world.landmarks[1].state.p_pos)))
 
     def reward(self, agent: Agent, world: World):
         """Get reward"""
@@ -86,6 +91,7 @@ class Scenario(BaseScenario):
         distance = np.sqrt(np.sum((ball.state.p_pos - location) ** 2))
 
         reward = self._last_distance - distance
+        self._last_distance = distance
 
         if reshaping:
             reward *= alpha
