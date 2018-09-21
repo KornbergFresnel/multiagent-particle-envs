@@ -58,15 +58,17 @@ class Scenario(BaseScenario):
         """Random initialize the world"""
 
         for i, landmark in enumerate(world.landmarks):
-            landmark.state.p_pos = np.random.uniform(-1, 1, world.dim_p)
+            size = landmark.size
+            landmark.state.p_pos = np.random.uniform(-1 + size, 1 - size, world.dim_p)
             landmark.state.p_vel = np.zeros(world.dim_p)
 
-        world.landmarks[1].state.p_pos = np.array([0., 0.5])
+        world.landmarks[1].state.p_pos = np.array([0., 0.])
         world.landmarks[1].size = self._agent_size
 
         # in this scenario, we set only one landmark as the target location
         for i, agent in enumerate(world.agents):
-            agent.state.p_pos = np.random.uniform(-1, 1, world.dim_p)
+            size = agent.size
+            agent.state.p_pos = np.random.uniform(-1 + size, 1 - size, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
             agent.size = self._agent_size
 

@@ -216,9 +216,6 @@ class World(object):
                     entity.state.p_vel = entity.state.p_vel / speed * entity.max_speed
             entity.state.p_pos += entity.state.p_vel * self.dt
 
-            padding = entity.size
-            entity.state.p_pos = np.clip(entity.state.p_pos, [-1. + padding, -1. + padding], [1. - padding, 1. - padding])
-
     def update_agent_state(self, agent):
         """Set communication state (directly for now), if the entity has non-zero communication channel"""
 
