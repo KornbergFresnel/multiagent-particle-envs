@@ -39,3 +39,5 @@ if __name__ == '__main__':
         env.render()
 
         step += 1
+    
+    env.close()

@@ -12,6 +12,8 @@ class Scenario(BaseScenario):
     def __init__(self):
         super().__init__()
         self._dist_limit = 1e-4
+        self._agent_size = 1.
+        self._agent_shaping = 0.1
 
     def make_world(self, **kwargs):
         """Generate a world instance
@@ -39,7 +41,10 @@ class Scenario(BaseScenario):
         ball.collide = True
         ball.movable = True
         ball.color = np.array([229/255, 132/255, 129/255])
-        ball.size *= 10.0
+        ball.size *= 4.0
+        ball.initial_mass *= 100
+
+        self._agent_size = ball.size * self._agent_shaping
 
         target.name = 'TARGET'
         target.collide = False
@@ -56,12 +61,14 @@ class Scenario(BaseScenario):
             landmark.state.p_pos = np.random.uniform(-1, 1, world.dim_p)
             landmark.state.p_vel = np.zeros(world.dim_p)
 
-        world.landmarks[1].state.p_pos = np.array([0., 0.])
+        world.landmarks[1].state.p_pos = np.array([0., 0.5])
+        world.landmarks[1].size = self._agent_size
 
         # in this scenario, we set only one landmark as the target location
         for i, agent in enumerate(world.agents):
             agent.state.p_pos = np.random.uniform(-1, 1, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
+            agent.size = self._agent_size
 
         world.target_location = np.array([0., 0.])
         world.collaborative = True
