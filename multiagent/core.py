@@ -55,6 +55,8 @@ class Entity(object):
         self.state = EntityState()
         # mass
         self.initial_mass = 1.0
+        # identity status
+        self.index = None
 
     @property
     def mass(self):
@@ -152,16 +154,17 @@ class World(object):
             self.update_agent_state(agent)
 
     # gather agent action forces
-    def apply_action_force(self, p_force):
+    def apply_action_force(self, p_force: list):
         """ Gather agent action forces
 
         Parameters
         ----------
-        p_force: list, for forces storage
+        p_force
+            for forces storage
 
         Returns
         -------
-        list, the p_force
+        p_force
         """
         # set applied forces
         for i, agent in enumerate(self.agents):
@@ -170,7 +173,7 @@ class World(object):
                 p_force[i] = agent.action.u + noise
         return p_force
 
-    def apply_environment_force(self, p_force):
+    def apply_environment_force(self, p_force: list):
         """Gather physical forces acting on entities, simple (but inefficient) collision response"""
 
         for a, entity_a in enumerate(self.entities):
@@ -191,12 +194,13 @@ class World(object):
                     p_force[b] = f_b + p_force[b]
         return p_force
 
-    def integrate_state(self, p_force):
+    def integrate_state(self, p_force: list):
         """ Integrate physical state
 
         Parameters
         ----------
-        p_force: list, for each entities
+        p_force
+            for each entities
         """
 
         for i, entity in enumerate(self.entities):
@@ -257,6 +261,50 @@ class World(object):
         force_b = -force if entity_b.movable else None
 
         return [force_a, force_b]
+
+    def get_partial_view(self, agent: Agent, identity_kind: int):
+        """ Get partial view of agent
+
+        Parameters
+        ----------
+        agent
+            the agent which get partial view
+
+        identity_kind
+            the sort of diffent entity
+
+        Returns
+        -------
+        view_arr
+            the matrix of partial view
+        """
+
+        # get the position of current agent
+        center = agent.state.p_pos
+        radius = 5
+        unit_pixel = 0.1
+
+        view_arr = np.zeros((radius * 2 + 1, radius * 2 + 1))
+        center_idx = np.array([radius, radius])
+
+        print('\n---new agent')
+
+        for other in self.entities:
+            assert isinstance(other, Entity)
+            if other is agent:
+                continue
+
+            agent_pos = other.state.p_pos
+
+            dis = agent_pos - center
+            dis /= unit_pixel
+
+            if np.all(np.abs(dis) <= radius):
+                pos = center_idx + dis.astype(np.int32)
+                view_arr[pos[0], pos[1]] = other.index
+                print('entity type:', other.index)
+
+        return view_arr
 
 
 class DynamicWorld(World):
