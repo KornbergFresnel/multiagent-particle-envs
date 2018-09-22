@@ -38,8 +38,8 @@ class MultiAgentEnv(gym.Env):
         self.time = 0
 
         # configure spaces
-        self.action_space = []
-        self.observation_space = []
+        self._action_space = []
+        self._observation_space = []
         for agent in self.agents:
             total_action_space = []
             # physical action space
@@ -65,12 +65,12 @@ class MultiAgentEnv(gym.Env):
                     act_space = MultiDiscrete([[0, act_space.n - 1] for act_space in total_action_space])
                 else:
                     act_space = spaces.Tuple(total_action_space)
-                self.action_space.append(act_space)
+                self._action_space.append(act_space)
             else:
-                self.action_space.append(total_action_space[0])
+                self._action_space.append(total_action_space[0])
             # observation space
             obs_dim = len(observation_callback(agent, self.world))
-            self.observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim,), dtype=np.float32))
+            self._observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim,), dtype=np.float32))
             agent.action.c = np.zeros(self.world.dim_c)
 
         # rendering
@@ -81,6 +81,22 @@ class MultiAgentEnv(gym.Env):
             self.viewers = [None] * self.n
         self._reset_render()
 
+    @property
+    def observation_space(self):
+        return self._observation_space[0]
+
+    @property
+    def action_space(self):
+        return self._action_space[0]
+
+    @property
+    def game_over(self):
+        return self.done_callback(self.world)
+
+    @property
+    def n_agent(self):
+        return len(self.agents)
+
     def step(self, action_n):
         obs_n = []
         reward_n = []
@@ -89,7 +105,7 @@ class MultiAgentEnv(gym.Env):
         self.agents = self.world.policy_agents
         # set action for each agent
         for i, agent in enumerate(self.agents):
-            self._set_action(action_n[i], agent, self.action_space[i])
+            self._set_action(action_n[i], agent, self._action_space[i])
         # advance world state
         self.world.step()
         # record observation for each agent
