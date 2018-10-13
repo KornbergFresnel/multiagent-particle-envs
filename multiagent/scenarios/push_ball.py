@@ -4,6 +4,11 @@ from multiagent.core import World, Agent, Landmark
 from multiagent.scenario import BaseScenario
 
 
+BALL_INDEX = 0
+TARGET_INDEX = 1
+AGENT_INDEX = 2
+
+
 class Scenario(BaseScenario):
     """Push-Ball: A cooperative scenario with N agents and a big ball,
     all agents need to push a ball to a designated location by collision.
@@ -14,6 +19,7 @@ class Scenario(BaseScenario):
         self._dist_limit = 1e-4
         self._agent_size = 1.
         self._agent_shaping = 0.08
+        self._last_distance = np.inf
 
     def make_world(self, **kwargs):
         """Generate a world instance
@@ -63,9 +69,11 @@ class Scenario(BaseScenario):
             landmark.state.p_pos = np.random.uniform(
                 -cam_range + size, cam_range - size, world.dim_p)
             landmark.state.p_vel = np.zeros(world.dim_p)
+            landmark.index = BALL_INDEX
 
         world.landmarks[1].state.p_pos = np.array([0., 0.])
         world.landmarks[1].size = self._agent_size
+        world.landmarks[1].index = TARGET_INDEX
 
         # in this scenario, we set only one landmark as the target location
         for i, agent in enumerate(world.agents):
@@ -74,6 +82,7 @@ class Scenario(BaseScenario):
                 -cam_range + size, cam_range - size, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
             agent.size = self._agent_size
+            agent.index = AGENT_INDEX
 
         world.target_location = np.array([0., 0.])
         world.collaborative = True
@@ -97,22 +106,41 @@ class Scenario(BaseScenario):
             reward *= alpha
         return reward
 
-    def observation(self, agent: Agent, world: World):
+    @staticmethod
+    def observation(agent: Agent, world: World, view_mode='vector'):
         """Get observation of agent"""
 
-        ball = world.landmarks[0]
+        if view_mode not in ['matrix', 'vector']:
+            raise Exception('Unaccepted view mode: {}'.format(view_mode))
+        if view_mode == 'matrix':
+            return world.get_partial_view(agent, 3)
+        else:
+            # 2 cnn style
+            ball, target = world.landmarks[0], world.landmarks[1]
 
-        relative_pos_to_ball = ball.state.p_pos - agent.state.p_pos
-        obs_ball = np.concatenate(
-            [ball.color, ball.state.p_vel, ball.state.p_pos - world.target_location])
-        obs_others = []
+            # format: {self, others, rel-ball, rel-target}
 
-        for e in world.agents:
-            if e is agent:
-                continue
-            obs_others.append(e.state.p_pos - agent.state.p_pos)
+            # velocity channel
+            vel_channel = []
+            pos_channel = []
 
-        obs_others = np.concatenate(obs_others)
+            vel_channel.append(agent.state.p_vel)
+            pos_channel.append(agent.state.p_pos)
+
+            for e in world.agents:
+                if e is agent:
+                    continue
+                vel_channel.append(e.state.p_vel)
+                pos_channel.append(e.state.p_pos)
+
+            vel_channel.append(ball.state.p_vel)
+            pos_channel.append(ball.state.p_pos)
+
+            vel_channel.append(target.state.p_vel)
+            pos_channel.append(target.state.p_pos)
+
+            vel_channel = np.stack(vel_channel)
+            pos_channel = np.stack(pos_channel)
 
         return np.concatenate([agent.state.p_vel, relative_pos_to_ball, obs_others, obs_ball])
 
