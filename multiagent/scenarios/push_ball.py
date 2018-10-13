@@ -115,3 +115,15 @@ class Scenario(BaseScenario):
         obs_others = np.concatenate(obs_others)
 
         return np.concatenate([agent.state.p_vel, relative_pos_to_ball, obs_others, obs_ball])
+
+    def global_observation(self, world: World):
+        ball, target = world.landmarks
+        ball_feature = np.concatenate([ball.state.p_pos, ball.state.p_vel, ball.color])
+        target_feature = np.concatenate([target.state.p_pos, target.state.p_vel, target.color])
+
+        # get positions of all agents
+        feature_arr = [ball_feature, target_feature]
+        for agent in world.agents:
+            agent_feature = np.concatenate([agent.state.p_pos, agent.state.p_vel, agent.color])
+            feature_arr.append(agent_feature)
+        return feature_arr

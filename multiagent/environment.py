@@ -15,7 +15,7 @@ class MultiAgentEnv(gym.Env):
 
     def __init__(self, world, reset_callback=None, reward_callback=None,
                  observation_callback=None, info_callback=None,
-                 done_callback=None, shared_viewer=True):
+                 done_callback=None, shared_viewer=True, global_obs_callback=None):
 
         self.world = world
         self.agents = self.world.policy_agents
@@ -36,6 +36,7 @@ class MultiAgentEnv(gym.Env):
         # if true, every agent has the same reward
         self.shared_reward = world.collaborative if hasattr(world, 'collaborative') else False
         self.time = 0
+        self.global_obs_callback = global_obs_callback
 
         # configure spaces
         self.action_space = []
@@ -92,6 +93,7 @@ class MultiAgentEnv(gym.Env):
             self._set_action(action_n[i], agent, self.action_space[i])
         # advance world state
         self.world.step()
+        global_obs = self._get_global_obs()
         # record observation for each agent
         for agent in self.agents:
             obs_n.append(self._get_obs(agent))
@@ -105,7 +107,7 @@ class MultiAgentEnv(gym.Env):
         if self.shared_reward:
             reward_n = [reward] * self.n
 
-        return obs_n, reward_n, done_n, info_n
+        return global_obs, obs_n, reward_n, done_n, info_n
 
     def reset(self):
         """Reset world"""
@@ -131,6 +133,11 @@ class MultiAgentEnv(gym.Env):
         if self.observation_callback is None:
             return np.zeros(0)
         return self.observation_callback(agent, self.world)
+
+    def _get_global_obs(self):
+        if self.global_obs_callback is None:
+            return None
+        return self.global_obs_callback(self.world)
 
     def _get_done(self, agent):
         """Get dones for a particular agent, unused right now --
