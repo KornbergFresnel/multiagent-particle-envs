@@ -44,7 +44,7 @@ class Scenario(BaseScenario):
 
         for i, landmark in enumerate(world.landmarks):
             landmark.color = np.array([0.1, 0.1, 0.1])
-            landmark.color[i + 1] += 0.8
+            landmark.color[(i + 1) % 3] += 0.8
             landmark.index = i
         # set goal landmark
         goal = np.random.choice(world.landmarks)
@@ -55,7 +55,7 @@ class Scenario(BaseScenario):
                 agent.color = np.array([0.75, 0.25, 0.25])
             else:
                 j = goal.index
-                agent.color[j + 1] += 0.5
+                agent.color[(j + 1) % 3] += 0.5
         # set random initial states
         for agent in world.agents:
             agent.state.p_pos = np.random.uniform(-1, +1, world.dim_p)
