@@ -146,13 +146,16 @@ class MultiAgentEnv(gym.Env):
         agent.action.c = np.zeros(self.world.dim_c)
         # process action
         if isinstance(action_space, MultiDiscrete):
-            act = []
-            size = action_space.high - action_space.low + 1
-            index = 0
-            for s in size:
-                act.append(action[index:(index+s)])
-                index += s
-            action = act
+            # act = []
+            # size = action_space.high - action_space.low + 1
+            # index = 0
+            # for s in size:
+            #     act.append(action[index:(index+s)])
+            #     index += s
+            # action = act
+            # TODO(ming): row is u, col is communication
+            row, col = action // action_space.w, action % action_space.w
+            action = [row, col]
         else:
             action = [action]
 
