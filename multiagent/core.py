@@ -95,6 +95,16 @@ class Agent(Entity):
         self.action_callback = None
         # optional replay buffer
         self.replay_buffer = None
+    
+    def bind_callback(self, func_name, func_entity):
+        assert getattr(func_name, None) is None, "Repeated function registion"
+        setattr(self, func_name, func_entity)
+
+    def callback(self, func_name, arg_list):
+        assert getattr(self, func_name, None) is not None, "{} does not exist, pls check you've registed it".format(func_name)
+        assert arg_list is None or isinstance(arg_list, tuple or list), "arg_list can be None or tuple or list"
+
+        return getattr(self, func_name)(*arg_list)
 
 
 class World(object):
