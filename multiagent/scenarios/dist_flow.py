@@ -28,6 +28,10 @@ def check_grid(pos, unit):
     return x, y
 
 
+def update_info(node):
+    raise NotImplementedError
+
+
 class Node(object):
     def __init__(self, x, y, node_id):
         self._reabable_node_id = (x, y)
@@ -70,9 +74,9 @@ class Node(object):
                 agent = self._agents.pop(key)
 
                 assert not agent.is_on_service, "Agent cannot remove since it is on serving!"
-                removed.add(key)
+                removed.append(key)
 
-        if add_ids is not None:
+        if add_agents is not None:
             for agent in add_agents:
                 # TODO(ming): update agent info
                 agent.callback("update_info", (self,))
@@ -104,9 +108,14 @@ class Scenario(BaseScenario):
         n_agents = kwargs.get('n_agents', 0)
         n_landmarks = kwargs.get('n_landmarks', 0)
 
+        self.landmark_s_dist = [None for _ in range(kwargs['max_steps'])]
+        self.landmark_t_dist = [None for _ in range(kwargs['max_steps'])]
+        self.agent_n_dist = [None for _ in range(kwargs['max_steps'])]
+        self.landmark_n_dist = [None for _ in range(kwargs['max_steps'])]
+
         # add agents
         self.reset_world(world, n_agents, n_landmarks)
-        self.time_flag = 0
+        self.time = 0
 
         return world
 
@@ -117,7 +126,7 @@ class Scenario(BaseScenario):
             world.agents = [Agent() for _ in range(n_agents)]
 
             for i, agent in enumerate(world.agents):
-                agent.name = 'agent_%d_%d' % (i, self.time_flag)
+                agent.name = 'agent_%d_%d' % (i, self.time)
                 agent.collide = False
                 agent.silent = True
                 agent.landmark = None
@@ -128,7 +137,7 @@ class Scenario(BaseScenario):
             if getattr(agent, "grid_id", None) is not None:
                 agent.grid_id = check_grid(agent.state.p_pos, world.unit)
             else:
-                agent.grid_id = random_selector(list(self.grids.keys()), p=None, size=1)
+                agent.grid_id = random_selector(list(world.grids.keys()), p=None, size=1)
 
             if agent.landmark is not None and agent.landmark.target_grid_id == agent.grid_id:
                 # is agent is on its target domain, stop it
@@ -147,8 +156,9 @@ class Scenario(BaseScenario):
 
     def update_landmarks(self, world, n_landmarks=0):
         landmarks = [Landmark() for _ in range(n_landmarks)]
-        s_grids = random_selector(list(self.grids.keys()), p=self.landmark_s_dist[self.time], size=n_landmarks)
-        t_grids = random_selector(list(self.grids.keys()), p=self.landmark_t_dist[self.time], size=n_landmarks)
+
+        s_grids = random_selector(list(world.grids.keys()), p=self.landmark_s_dist[self.time], size=n_landmarks)
+        t_grids = random_selector(list(world.grids.keys()), p=self.landmark_t_dist[self.time], size=n_landmarks)
 
         for i, landmark, source, target in enumerate(landmarks, s_grids, t_grids):
             landmark.name = 'landmark %d' % i
@@ -169,7 +179,7 @@ class Scenario(BaseScenario):
 
     def update(self, world, time):
         n_agents = number_generator(self.agent_n_dist[self.time])
-        self.update_agent_domain(world)
+        self.update_agent_domain(world, n_agents=n_agents)
 
         n_landmarks = number_generator(self.landmark_n_dist[self.time])
         self.update_landmarks(world, n_landmarks)
@@ -181,10 +191,10 @@ class Scenario(BaseScenario):
         self.update_landmarks(world, n_landmarks)
         self.update_agent_domain(world, n_agents)
 
-        self.time_flag = 0
+        self.time = 0
 
     def reward(self, agent, world):
-        if self.agent.landmark is None:
+        if agent.landmark is None:
             return 0
         else:
             return agent.landmark.price if agent.landmark.target_grid_id == agent.grid_id else 0
@@ -192,4 +202,4 @@ class Scenario(BaseScenario):
     def observation(self, agent, world):
         grid_id = agent.grid_id
 
-        return self.grids[grid_id].observation
+        return world.grids[grid_id].observation
