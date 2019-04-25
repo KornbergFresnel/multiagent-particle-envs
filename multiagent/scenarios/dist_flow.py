@@ -7,6 +7,27 @@ from multiagent.core import World, Agent, Landmark
 from multiagent.scenario import BaseScenario
 
 
+def number_generator(mean, var=None, dist_type="gaussian"):
+    # TODO(ming): Gaussian distribution
+
+    if dist_type == "gaussian":
+        n = np.random.normal(mean, var)
+    else:
+        raise NotImplementedError
+
+    return n
+
+
+def random_selector(dataset, p=None, size=None):
+    # TODO(ming): Gaussian distribution
+    return NotImplementedError
+
+
+def check_grid(pos, unit):
+    x, y = pos[0] // unit, pos[1] // unit
+    return x, y
+
+
 class Node(object):
     def __init__(self, x, y, node_id):
         self._reabable_node_id = (x, y)
@@ -39,7 +60,7 @@ class Node(object):
     def human_node_id(self):
         return self._reabable_node_id
 
-    def update_agent(remove_ids=None, add_agents=None):
+    def update_agent(self, remove_ids=None, add_agents=None):
         """Recalled when match distribution"""
 
         removed, migrates = [], []
@@ -56,6 +77,12 @@ class Node(object):
                 # TODO(ming): update agent info
                 agent.callback("update_info", (self,))
                 self._agents[agent.name] = agent
+
+    def update_landmarks(self, landmarks=None):
+        # check duration first
+        # add landmarks
+        for landmark in landmarks:
+            self._landmarks[landmark.name] = landmark
 
 
 class Scenario(BaseScenario):
@@ -84,7 +111,7 @@ class Scenario(BaseScenario):
         return world
 
     def update_agent_domain(self, world, n_agents=0):
-        # TODO(ming): need add callback function for each new agents
+        # TODO(ming): need add callback function for each new agents, then collect ava_agents
 
         if n_agents is not None:
             world.agents = [Agent() for _ in range(n_agents)]
@@ -99,31 +126,54 @@ class Scenario(BaseScenario):
         for agent in world.agents:
             # check domain
             if getattr(agent, "grid_id", None) is not None:
-                agent.grid_id = check_grid(agent.state.p_pos)
+                agent.grid_id = check_grid(agent.state.p_pos, world.unit)
             else:
-                agent.grid_id = select_grid("random", world.grids)
+                agent.grid_id = random_selector(list(self.grids.keys()), p=None, size=1)
 
-            if agent.landmark is not None and agent.landmark.grid_id == agent.grid_id:
+            if agent.landmark is not None and agent.landmark.target_grid_id == agent.grid_id:
                 # is agent is on its target domain, stop it
                 agent.state.p_vel -= agent.state.p_vel
-
-            # random stop
-            if not agent.is_on_service:
-                # TODO(ming): random stop
+            else:
+                # random_stop() or random_start()
+                if not agent.is_on_service:
+                    # TODO(ming): random stop
+                    raise NotImplementedError
+                else:
+                    # random_migrate() avoid
+                    pass
 
         for node in world.grids.values():  # since agent changed their domain, grid needs to remove these agents
             node.update_agent()
 
-    def update_landmarks(self, world, n_landmarks):
-        world.landmarks = [Landmark() for _ in range(n_landmarks)]
-        for i, landmark in enumerate(world.landmarks):
+    def update_landmarks(self, world, n_landmarks=0):
+        landmarks = [Landmark() for _ in range(n_landmarks)]
+        s_grids = random_selector(list(self.grids.keys()), p=self.landmark_s_dist[self.time], size=n_landmarks)
+        t_grids = random_selector(list(self.grids.keys()), p=self.landmark_t_dist[self.time], size=n_landmarks)
+
+        for i, landmark, source, target in enumerate(landmarks, s_grids, t_grids):
             landmark.name = 'landmark %d' % i
             landmark.collide = False
             landmark.movable = False
-            landmark.price = 0
+            landmark.grid_id = source
+            landmark.target_grid_id = target
 
-            # TODO(ming): dispatching this landmark to a certain grid
-            landmark.grid_id = None
+            s_numpy = np.array(source)
+            t_numpy = np.array(target)
+            landmark.price = np.sqrt((s_numpy - t_numpy) ** 2)  # Euler
+            world.grids[source].update_landmarks([landmark])
+
+        # collect landmarks
+        world.landmarks = []
+        for grid in world.grids:
+            world.landmarks.extend(grid.landmark.values())
+
+    def update(self, world, time):
+        n_agents = number_generator(self.agent_n_dist[self.time])
+        self.update_agent_domain(world)
+
+        n_landmarks = number_generator(self.landmark_n_dist[self.time])
+        self.update_landmarks(world, n_landmarks)
+        self.time = time
 
     def reset_world(self, world, n_agents=None, n_landmarks=None):
         """Random properties for landmarks"""
@@ -137,10 +187,9 @@ class Scenario(BaseScenario):
         if self.agent.landmark is None:
             return 0
         else:
-            return agent.landmark.price if agent.landmark.grid_id == agent.grid_id else 0
+            return agent.landmark.price if agent.landmark.target_grid_id == agent.grid_id else 0
 
     def observation(self, agent, world):
         grid_id = agent.grid_id
 
         return self.grids[grid_id].observation
-

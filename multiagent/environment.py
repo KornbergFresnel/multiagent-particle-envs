@@ -338,9 +338,53 @@ class BatchMultiAgentEnv(gym.Env):
         return results_n
 
 
-class DistflowEnv(gym.Env):
-    metadta = {
-        'render.modes': ['human', 'rgb_array']
-    }
+class DistflowEnv(MultiAgentEnv):
 
-    def __init__(self, world, reset_callback=None, reward_callback=None)
+    def __init__(self, world, reset_callback=None, reward_callback=None, observation_callback=None, match_callback=None, update_callback=None, info_callback=None, done_callback=None, shared_viewer=True):
+        super(DistflowEnv, self).__init__(world, reset_callback, reward_callback, observation_callback, info_callback, done_callback, shared_viewer)
+
+        self.match_callback = match_callback
+        self.update_callback = update_callback
+
+    def step(self, landmarks):
+        """ State transition
+
+        :param landmarks: list, landmark id list
+        :return: observation, reward, termination indicator and info list
+        """
+
+        obs_n, reward_n, done_n, info_n = [], [], [], {'n': []}
+
+        self.agents = self.world.ava_agents  # update agents record
+        self.n = len(self.agents)
+
+        action_n = self.match_callback(landmarks, self.agents, self.world)
+
+        for i, agent in enumerate(self.agents):
+            self._set_action(action_n[i], agent, slf.action_space[i])
+
+        self.world.step()
+
+        for agent in self.agents:
+            obs_n.append(self._get_obs(agent))
+            reward_n.append(self._get_reward(agent))
+            done_n.append(self._get_done(agent))
+
+            info_n['n'].append(self._get_info(agent))
+
+        if self.shared_reward:
+            reward_n = [reward] * self.n
+
+        # update agents and landmarks domain
+        self.time += 1
+        self.update_callback(self.world, self.time)
+
+        return obs_n, reward_n, done_n, info_n
+
+    def render(self, mode='human'):
+        """ Grid world """
+
+        # TODO(ming): draw grid first
+        height, width, unit = self.world.height, self.world.width, self.world.unit
+
+        super().render(mode=mode)
