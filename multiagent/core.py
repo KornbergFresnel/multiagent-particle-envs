@@ -117,7 +117,7 @@ class World(object):
         self.dim_c = 0  # communication channel dimensionality
         self.dim_p = 2  # position dimensionality
         self.dim_color = 3  # color dimensionality
-        self.dt = 0.1  # simulation time-step
+        self.dt = 0.025  # simulation time-step
         self.damping = 0.25  # physical damping
         self.contact_force = 1e+2  # contact response parameters
         self.contact_margin = 1e-3
@@ -235,7 +235,20 @@ class World(object):
                     # entity.state.p_vel = entity.state.p_vel / np.sqrt(np.square(entity.state.p_vel[0]) +
                     #                                               np.square(entity.state.p_vel[1])) * entity.max_speed
                     entity.state.p_vel = entity.state.p_vel / speed * entity.max_speed
+
+            # if 'agent' in entity.name and entity.landmark is not None:
+            #     if entity.landmark.target_grid_id == entity.grid_id:
+            #         return
+            #     else:
             entity.state.p_pos += entity.state.p_vel * self.dt
+            entity.state.p_pos = np.clip(entity.state.p_pos, -0.99, 0.99)
+
+            if entity.state.p_pos[0] == -0.99 or entity.state.p_pos[0] == 0.99:
+                entity.state.p_vel *= -1.
+
+            if entity.state.p_pos[1] == -0.99 or entity.state.p_pos[1] == 0.99:
+                entity.state.p_vel[1] *= -1.
+
 
     def update_agent_state(self, agent):
         """Set communication state (directly for now), if the entity has non-zero communication channel"""

@@ -17,26 +17,45 @@ def number_generator(mean, var=None, dist_type="gaussian"):
     else:
         raise NotImplementedError
 
-    return n
+    return max(n, 0)
 
 
 def random_selector(dataset, p=None, size=None):
-    return random.sample(dataset, size)
+    seg, remain = size // len(dataset), size % len(dataset)
+
+    res = []
+
+    for _ in range(seg):
+        res.extend(random.sample(dataset, len(dataset)))
+
+    res.extend(random.sample(dataset, remain))
+
+    return res
 
 
 def check_grid(pos, unit, ratio):
-    pos += 1.
-    return tuple((pos / ratio / unit).astype(np.int32))
+    real_pos = pos + 1.
+
+    grid_id = tuple((real_pos / ratio / unit).astype(np.int32))
+
+    return grid_id
 
 
 def update_info(node):
     raise NotImplementedError
 
 
-def convert_grid_id_to_pos(source, world, range=(-1, 1)):
+def convert_grid_id_to_pos(source, world, r=(-1, 1)):
     x, y = source
-    pos = np.array([x * world.unit[0], y * world.unit[1]])
+
+    noise = -world.unit / 2. + np.random.rand(2) * world.unit
+    pos = np.array([x * world.unit[0] + world.unit[0] * 0.5, y * world.unit[1] + world.unit[1] * 0.5]) + noise
+
+    pos[0] = np.clip(pos[0], 0, world.unit[0] * world.width)
+    pos[1] = np.clip(pos[1], 0, world.unit[1] * world.width)
     pos = pos * world.ratio - 1.
+
+    assert r[0] <= pos[0] <= r[1] and r[0] <= pos[1] <= r[1], "pos is: {}".format(pos)
 
     return pos
 
@@ -96,9 +115,14 @@ class Node(object):
                 self._agents[agent.name] = agent
 
     def clear_landmarks(self):
-        self._landmarks = dict()
+        remove = []
+        for e in self.landmarks.values():
+            remove.append(e.name)
 
-    def update_landmarks(self, landmarks=None):
+        for name in remove:
+            self._landmarks.pop(name)
+
+    def update_landmarks(self, landmarks):
         # check duration first
         # add landmarks
         for landmark in landmarks:
@@ -125,8 +149,8 @@ class Scenario(BaseScenario):
 
         self.landmark_s_dist = [None for _ in range(kwargs['max_steps'])]
         self.landmark_t_dist = [None for _ in range(kwargs['max_steps'])]
-        self.agent_n_dist = [(10., 1.) for _ in range(kwargs['max_steps'])]
-        self.landmark_n_dist = [(10., 1.) for _ in range(kwargs['max_steps'])]
+        self.agent_n_dist = [(50., 1.) for _ in range(kwargs['max_steps'])]
+        self.landmark_n_dist = [(50., 1.) for _ in range(kwargs['max_steps'])]
 
         # add agents
         self.reset_world(world)
@@ -153,6 +177,8 @@ class Scenario(BaseScenario):
                 agent.state.p_pos = convert_grid_id_to_pos(source, world, (-1, 1))
                 agent.state.p_vel = np.zeros(world.dim_p)
                 agent.state.c = np.zeros(world.dim_c)
+                agent.color = np.array([0.75, 0.75, 0.75])
+                agent.size *= 0.25
 
                 # agent.bind_callback("update_info", update_info)
                 agent.action_space = spaces.Discrete(world.dim_p * 2 + 1)
@@ -190,14 +216,25 @@ class Scenario(BaseScenario):
     def update_landmarks(self, world, n_landmarks=0):
         """ Remove dead landmarks and add new landmarks """
 
+        for grid in world.grids.values():
+            grid.clear_landmarks()
+
+        is_all_off = True
+
+        for agent in world.agents:
+            if agent.is_on_service:
+                is_all_off = False
+                break
+
+        if not is_all_off:
+            # print("all off")
+            return
+
         n_landmarks = int(n_landmarks)
         landmarks = [Landmark() for _ in range(n_landmarks)]
 
         s_grids = random_selector(list(world.grids.keys()), p=self.landmark_s_dist[self.time], size=n_landmarks)
         t_grids = random_selector(list(world.grids.keys()), p=self.landmark_t_dist[self.time], size=n_landmarks)
-
-        for grid in world.grids.values():
-            grid.clear_landmarks()
 
         for i, (landmark, source, target) in enumerate(zip(landmarks, s_grids, t_grids)):
             landmark.name = 'landmark %d' % i
@@ -205,6 +242,9 @@ class Scenario(BaseScenario):
             landmark.movable = False
             landmark.grid_id = source
             landmark.target_grid_id = target
+            landmark.done = False
+            landmark.color = np.array([229 / 255, 132 / 255, 129 / 255])
+            landmark.size *= 0.2
 
             landmark.state.p_pos = convert_grid_id_to_pos(source, world, (-1, 1))
             landmark.state.p_vel = np.zeros(world.dim_p)
@@ -276,6 +316,7 @@ class Scenario(BaseScenario):
 
             for agent in world.grids[source].agents.values():
                 if not agent.is_on_service:
+                    landmark.done = True
                     agent.landmark = landmark
                     agent.is_on_service = True
                     agent_ids.append((source, agent.name))

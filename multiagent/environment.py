@@ -200,7 +200,7 @@ class MultiAgentEnv(gym.Env):
         self.render_geoms_xform = None
 
     # render environment
-    def render(self, mode='human', window_size=None):
+    def render(self, mode='human', window_size=None, dynamic_render=False, grid_mode=False):
         if mode == 'human':
             alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
             message = ''
@@ -224,14 +224,41 @@ class MultiAgentEnv(gym.Env):
 
                 if window_size is not None:
                     self.viewers[i] = rendering.Viewer(*window_size)
+                else:
+                    self.viewers[i] = rendering.Viewer(self.world.width * self.world.unit[0], self.world.height * self.world.unit[1])
 
         # create rendering geometry
-        if self.render_geoms is None:
+        # if self.render_geoms is None:
+            # ========== draw horizon lines
+            # from multiagent import renderin
+
+        if self.render_geoms is None or dynamic_render:
             # import rendering only if we need it (and don't import for headless machines)
             #from gym.envs.classic_control import rendering
             from multiagent import rendering
             self.render_geoms = []
             self.render_geoms_xform = []
+
+            VIEW_BOUNDER = 2
+
+            grid_size = self.world.unit[0]
+            for i in range(0, self.world.height):
+                start = (-1., i * self.world.unit[1] * self.world.ratio[1] - 1.)
+                end = (1., start[1])
+                # geom = self.viewer.draw_line(start, end)
+                geom = rendering.Line(start, end)
+                # self.viewers[0].add_geom(geom)
+                self.render_geoms.append(geom)
+
+            # draw vertical lines
+            for i in range(0, self.world.width):
+                start = (i * self.world.unit[0] * self.world.ratio[0] - 1., 1.)
+                end = (start[0], -1)
+                # geom = self.viewer.draw_line(start, end)
+                geom = rendering.Line(start, end)
+                # self.viewers[0].add_geom(geom)
+                self.render_geoms.append(geom)
+
             for entity in self.world.entities:
                 geom = rendering.make_circle(entity.size)
                 xform = rendering.Transform()
@@ -248,6 +275,7 @@ class MultiAgentEnv(gym.Env):
                 viewer.geoms = []
                 for geom in self.render_geoms:
                     viewer.add_geom(geom)
+                    # viewer.add_onetime(geom)
 
         results = []
         for i in range(len(self.viewers)):
@@ -261,6 +289,7 @@ class MultiAgentEnv(gym.Env):
             self.viewers[i].set_bounds(pos[0]-cam_range,pos[0]+cam_range,pos[1]-cam_range,pos[1]+cam_range)
             # update geometry positions
             for e, entity in enumerate(self.world.entities):
+                # print("len of geoms", len(self.render_geoms_xform), len(self.world.entities))
                 self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
             # render to display or array
             results.append(self.viewers[i].render(return_rgb_array = mode=='rgb_array'))
@@ -365,16 +394,25 @@ class DistflowEnv(MultiAgentEnv):
         # self.agents = self.world.agents  # update agents record
         self.n = len(self.agents)
 
-        agent_ids, action_n = self.match_callback(landmarks, self.world)
+        is_all_off = True
+
+        for agent in self.world.agents:
+            if agent.is_on_service:
+                is_all_off = False
+                break
 
         self.agents = []
-        for i, (grid_id, agent_name) in enumerate(agent_ids):
-            agent = self.world.grids[grid_id].agents[agent_name]
 
-            assert agent is not None, "Cannot find such agent at current grid whose name is %s " % agent_name
-            self.agents.append(agent)
-            # print("agent action and space:", action_n[i], agent.action_space)
-            self._set_action(action_n[i], agent, agent.action_space)
+        if is_all_off:
+            agent_ids, action_n = self.match_callback(landmarks, self.world)
+
+            for i, (grid_id, agent_name) in enumerate(agent_ids):
+                agent = self.world.grids[grid_id].agents[agent_name]
+
+                assert agent is not None, "Cannot find such agent at current grid whose name is %s " % agent_name
+                self.agents.append(agent)
+                # print("agent action and space:", action_n[i], agent.action_space)
+                self._set_action(action_n[i], agent, agent.action_space)
 
         self.world.step()
 
@@ -400,4 +438,4 @@ class DistflowEnv(MultiAgentEnv):
         # TODO(ming): draw grid first
         height, width, unit = self.world.height, self.world.width, self.world.unit
 
-        super().render(mode=mode)
+        super().render(mode=mode, dynamic_render=True, window_size=(700, 700), grid_mode=True)

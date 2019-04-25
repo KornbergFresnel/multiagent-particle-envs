@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import time
 import numpy as np
 
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
@@ -18,7 +19,7 @@ if __name__ == '__main__':
     parser.add_argument('-he', '--height', type=int, default=6, help='Height of the world.')
     parser.add_argument('-l', '--length', type=int, default=800, help='Define the minimum step size.')
     parser.add_argument('-r', '--render', action='store_true', help='Render or not, default is not.')
-    
+
     args = parser.parse_args()
 
     scenario = scenarios.load(args.scenario).Scenario()
@@ -27,21 +28,22 @@ if __name__ == '__main__':
     env = DistflowEnv(world, scenario.reset_world, scenario.reward, scenario.observation, match_callback=scenario.match, update_callback=scenario.update, info_callback=None, shared_viewer=True)
 
     if args.render:
-        env.render()
+        env.render(mode='rgb_array')
     # policies = [RandomPolicy(env, i) for i in range(env.n)]
 
     obs_n = env.reset()
-    step, max_steps = 0, args.length
+    step, max_steps = 0, args.length - 1
 
     while step < max_steps:
-        
+
         # random sample landmarks
         landmarks = np.random.choice(world.landmarks, size=10)
 
         obs_n, reward_n, done_n, _ = env.step(landmarks)
 
         if args.render:
-            env.render()
+            env.render(mode='rgb_array')
+            time.sleep(0.1)
 
         step += 1
 
