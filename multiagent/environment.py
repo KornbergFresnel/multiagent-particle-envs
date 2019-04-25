@@ -200,7 +200,7 @@ class MultiAgentEnv(gym.Env):
         self.render_geoms_xform = None
 
     # render environment
-    def render(self, mode='human'):
+    def render(self, mode='human', window_size=None):
         if mode == 'human':
             alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
             message = ''
@@ -221,7 +221,9 @@ class MultiAgentEnv(gym.Env):
                 # import rendering only if we need it (and don't import for headless machines)
                 #from gym.envs.classic_control import rendering
                 from multiagent import rendering
-                self.viewers[i] = rendering.Viewer(700,700)
+
+                if window_size is not None:
+                    self.viewers[i] = rendering.Viewer(*window_size)
 
         # create rendering geometry
         if self.render_geoms is None:
@@ -345,6 +347,11 @@ class DistflowEnv(MultiAgentEnv):
 
         self.match_callback = match_callback
         self.update_callback = update_callback
+        self.discrete_action_input = False  # not discreate input while discreate action space
+
+        # if self.discrete_action_space:
+        #     agent.action.u[0] += action[0][1] - action[0][2]
+        #     agent.action.u[1] += action[0][3] - action[0][4]
 
     def step(self, landmarks):
         """ State transition
@@ -355,13 +362,19 @@ class DistflowEnv(MultiAgentEnv):
 
         obs_n, reward_n, done_n, info_n = [], [], [], {'n': []}
 
-        self.agents = self.world.ava_agents  # update agents record
+        # self.agents = self.world.agents  # update agents record
         self.n = len(self.agents)
 
-        action_n = self.match_callback(landmarks, self.agents, self.world)
+        agent_ids, action_n = self.match_callback(landmarks, self.world)
 
-        for i, agent in enumerate(self.agents):
-            self._set_action(action_n[i], agent, slf.action_space[i])
+        self.agents = []
+        for i, (grid_id, agent_name) in enumerate(agent_ids):
+            agent = self.world.grids[grid_id].agents[agent_name]
+
+            assert agent is not None, "Cannot find such agent at current grid whose name is %s " % agent_name
+            self.agents.append(agent)
+            # print("agent action and space:", action_n[i], agent.action_space)
+            self._set_action(action_n[i], agent, agent.action_space)
 
         self.world.step()
 

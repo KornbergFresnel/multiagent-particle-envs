@@ -121,6 +121,7 @@ class World(object):
         self.damping = 0.25  # physical damping
         self.contact_force = 1e+2  # contact response parameters
         self.contact_margin = 1e-3
+        self.vel_decay = True
 
     @property
     def entities(self):
@@ -180,6 +181,11 @@ class World(object):
         for i, agent in enumerate(self.agents):
             if agent.movable:
                 noise = np.random.randn(*agent.action.u.shape) * agent.u_noise if agent.u_noise else 0.0
+                
+                if agent.action.u is None:
+                    agent.action.u = np.zeros(self.dim_p)
+                    agent.action.c = np.zeros(self.dim_c)
+
                 p_force[i] = agent.action.u + noise
         return p_force
 
@@ -217,7 +223,8 @@ class World(object):
             if not entity.movable:
                 continue
 
-            entity.state.p_vel = entity.state.p_vel * (1 - self.damping)  # velocity decay
+            if self.vel_decay:
+                entity.state.p_vel = entity.state.p_vel * (1 - self.damping)  # velocity decay
 
             if p_force[i] is not None:
                 entity.state.p_vel += (p_force[i] / entity.mass) * self.dt

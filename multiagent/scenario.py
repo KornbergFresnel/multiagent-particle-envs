@@ -3,6 +3,10 @@
 
 
 class BaseScenario(object):
+    def __init__(self, *args, **kwargs):
+        self.time = 0
+        return super().__init__(*args, **kwargs)
+
     def make_world(self, **kwargs):
         # create elements of the world
         raise NotImplementedError()

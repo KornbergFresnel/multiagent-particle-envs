@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import numpy as np
 
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
@@ -14,29 +15,33 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--scenario', default='dist_flow.py', help='Path of the scenario python script.')
     parser.add_argument('-n', '--n_agent', type=int, default=2, help='Set the number of agents, both good agents and adversaries')
     parser.add_argument('-w', '--width', type=int, default=6, help='Width of the world.')
-    parser.add_argument('-h', '--height', type=int, default=6, help='Height of the world.')
-    # parser.add_argument('-m', '--multi_viewer', action='store_false', help='Create multiple viewers or not.')
+    parser.add_argument('-he', '--height', type=int, default=6, help='Height of the world.')
     parser.add_argument('-l', '--length', type=int, default=800, help='Define the minimum step size.')
+    parser.add_argument('-r', '--render', action='store_true', help='Render or not, default is not.')
+    
     args = parser.parse_args()
 
     scenario = scenarios.load(args.scenario).Scenario()
-    world = scenario.make_world(num_agents=args.n_agent, width=args.width, height=args.height, n_landmarks=args.n_agent * 2)
+    world = scenario.make_world(num_agents=args.n_agent, width=args.width, height=args.height, unit=np.array([10, 10]), max_steps=args.length)
 
-    env = DistflowEnv(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None, shared_viewer=args.multi_viewer)
-    env.render()
+    env = DistflowEnv(world, scenario.reset_world, scenario.reward, scenario.observation, match_callback=scenario.match, update_callback=scenario.update, info_callback=None, shared_viewer=True)
+
+    if args.render:
+        env.render()
     # policies = [RandomPolicy(env, i) for i in range(env.n)]
 
     obs_n = env.reset()
-    step, min_steps = 0, args.length
+    step, max_steps = 0, args.length
 
-    while step < min_steps:
-        act_n = []
+    while step < max_steps:
+        
+        # random sample landmarks
+        landmarks = np.random.choice(world.landmarks, size=10)
 
-        for i, policy in enumerate(policies):
-            act_n.append(policy.action(obs_n[i]))
+        obs_n, reward_n, done_n, _ = env.step(landmarks)
 
-        obs_n, reward_n, done_n, _ = env.step(act_n)
-        env.render()
+        if args.render:
+            env.render()
 
         step += 1
 
