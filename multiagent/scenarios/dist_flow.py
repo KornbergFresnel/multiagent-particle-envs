@@ -40,6 +40,8 @@ class Node(object):
         return self._reabable_node_id
 
     def update_agent(remove_ids=None, add_agents=None):
+        """Recalled when match distribution"""
+
         removed, migrates = [], []
 
         if remove_ids is not None:
@@ -66,6 +68,7 @@ class Scenario(BaseScenario):
 
         world = World()
         world.grids = dict()
+        world.height, world.width, world.unit = kwargs['height'], kwargs['width'], kwargs['unit']
 
         for i in range(kwargs['width']):
             for j in range(kwargs['height']):

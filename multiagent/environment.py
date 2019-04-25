@@ -336,3 +336,11 @@ class BatchMultiAgentEnv(gym.Env):
         for env in self.env_batch:
             results_n += env.render(mode, close)
         return results_n
+
+
+class DistflowEnv(gym.Env):
+    metadta = {
+        'render.modes': ['human', 'rgb_array']
+    }
+
+    def __init__(self, world, reset_callback=None, reward_callback=None)
