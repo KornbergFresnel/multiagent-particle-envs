@@ -16,3 +16,6 @@ from gym.envs.registration import register
 #     entry_point='multiagent.envs:SimpleSpeakerListenerEnv',
 #     max_episode_steps=100,
 # )
+
+from . import scenarios
+from . import environment
