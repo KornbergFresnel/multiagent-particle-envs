@@ -122,6 +122,8 @@ class World(object):
         self.contact_force = 1e+2  # contact response parameters
         self.contact_margin = 1e-3
         self.vel_decay = True
+        self.width = 700
+        self.height = 700
 
     @property
     def entities(self):

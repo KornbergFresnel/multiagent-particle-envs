@@ -225,7 +225,10 @@ class MultiAgentEnv(gym.Env):
                 if window_size is not None:
                     self.viewers[i] = rendering.Viewer(*window_size)
                 else:
-                    self.viewers[i] = rendering.Viewer(self.world.width * self.world.unit[0], self.world.height * self.world.unit[1])
+                    if grid_mode:
+                        self.viewers[i] = rendering.Viewer(self.world.width * self.world.unit[0], self.world.height * self.world.unit[1])
+                    else:
+                        self.viewers[i] = rendering.Viewer(self.world.width, self.world.height)
 
         # create rendering geometry
         # if self.render_geoms is None:
@@ -241,23 +244,24 @@ class MultiAgentEnv(gym.Env):
 
             VIEW_BOUNDER = 2
 
-            grid_size = self.world.unit[0]
-            for i in range(0, self.world.height):
-                start = (-1., i * self.world.unit[1] * self.world.ratio[1] - 1.)
-                end = (1., start[1])
-                # geom = self.viewer.draw_line(start, end)
-                geom = rendering.Line(start, end)
-                # self.viewers[0].add_geom(geom)
-                self.render_geoms.append(geom)
+            if grid_mode:
+                grid_size = self.world.unit[0]
+                for i in range(0, self.world.height):
+                    start = (-1., i * self.world.unit[1] * self.world.ratio[1] - 1.)
+                    end = (1., start[1])
+                    # geom = self.viewer.draw_line(start, end)
+                    geom = rendering.Line(start, end)
+                    # self.viewers[0].add_geom(geom)
+                    self.render_geoms.append(geom)
 
-            # draw vertical lines
-            for i in range(0, self.world.width):
-                start = (i * self.world.unit[0] * self.world.ratio[0] - 1., 1.)
-                end = (start[0], -1)
-                # geom = self.viewer.draw_line(start, end)
-                geom = rendering.Line(start, end)
-                # self.viewers[0].add_geom(geom)
-                self.render_geoms.append(geom)
+                # draw vertical lines
+                for i in range(0, self.world.width):
+                    start = (i * self.world.unit[0] * self.world.ratio[0] - 1., 1.)
+                    end = (start[0], -1)
+                    # geom = self.viewer.draw_line(start, end)
+                    geom = rendering.Line(start, end)
+                    # self.viewers[0].add_geom(geom)
+                    self.render_geoms.append(geom)
 
             for entity in self.world.entities:
                 geom = rendering.make_circle(entity.size)
