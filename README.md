@@ -7,6 +7,7 @@ Used in the paper [Multi-Agent Actor-Critic for Mixed Cooperative-Competitive En
 
 - Create a new scenario which called *Push Ball*, listed in the environment list
 - Create a new scenario which called *Battle*, a python implementation of [Battle of MAgent](https://github.com/geek-ai/MAgent), listed in the environment list
+- Create a new scenario named *Soccer Game*, listed in the environment list
 
 ## More details about the kernel
 
@@ -39,6 +40,7 @@ You can create new scenarios by implementing the first 4 functions above (`make_
 | `simple_world_comm.py` | Y | Y | Environment seen in the video accompanying the paper. Same as simple_tag, except (1) there is food (small blue balls) that the good agents are rewarded for being near, (2) we now have ‘forests’ that hide agents inside from being seen from outside; (3) there is a ‘leader adversary” that can see the agents at all times, and can communicate with the other adversaries to help coordinate the chase. |
 | `push_ball.py` | N | N | A cooperative scenario called push_ball. There are several agents and one big ball, all agents need to cooperate to push the ball to the target location by collision. |
 | `magent_battle.py` | N | Y | A cooperative and comperative scenario, the python implementation of Magent Battle. |
+| `fo.py` | N | Y | Soccer game, a mixed cooperative and comperative scenario. |
 
 ## Paper citation
 
