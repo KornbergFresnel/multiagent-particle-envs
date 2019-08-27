@@ -340,6 +340,9 @@ class World(object):
 
 
 class DynamicWorld(World):
+    """ Support dist_flow scenario
+    """
+
     def __init__(self):
         super().__init__()
         del self.agents
