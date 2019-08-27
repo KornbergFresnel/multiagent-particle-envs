@@ -67,6 +67,12 @@ class Scenario(BaseScenario):
         callable_ins = self._adversary_reward if agent.adversary else self._agent_reward
         return callable_ins(agent, world)
 
+    def done(self, agent, world):
+        # TODO(ming): 1) if soccer out of world, done, 2) if soccer enter any gate, done
+        ball = world.landmarks[0]
+
+        return ball.out(world) or ball.at(world.landmarks[1:])
+
     def _adversary_reward(self, agent, world):
         raise NotImplementedError
 

@@ -1,5 +1,25 @@
 import numpy as np
 
+from collections import namedtuple
+
+
+# Area support rectangle and circle
+# for circle: type='circle', pos=list(), radius=float
+# for rectangle: type='rec', pos=list(), raidus=[halfWidth, halfHeight]
+Area = namedtuple("Area", "type, pos, radius")
+
+
+class AreaAPI(object):
+
+    def at(self, objection):
+        raise NotImplementedError
+    
+    def out(self, objection):
+        raise NotImplementedError
+
+    def area(self):
+        raise NotImplementedError
+
 
 class EntityState(object):
     """Physical/external base state of all entities"""
@@ -63,11 +83,23 @@ class Entity(object):
         return self.initial_mass
 
 
-class Landmark(Entity):
+class Landmark(Entity, AreaAPI):
     """Properties of landmark entities"""
 
     def __init__(self):
         super(Landmark, self).__init__()
+
+    def at(self, objection):
+        assert hasattr(objection, "area")
+        raise NotImplementedError
+    
+    def out(self, objection):
+        assert hasattr(objection, "area")
+        raise NotImplementedError
+
+    def area(self):
+        pos = self.state.p_pos
+        return Area("circle", pos, self.size / 2.)
 
 
 class Agent(Entity):
@@ -107,7 +139,7 @@ class Agent(Entity):
         return getattr(self, func_name)(*arg_list)
 
 
-class World(object):
+class World(object, AreaAPI):
     """Multi-agent world"""
 
     def __init__(self):
@@ -148,6 +180,18 @@ class World(object):
         :return list, the list of world-scripts-controlled agents
         """
         return [agent for agent in self.agents if agent.action_callback is not None]
+
+    def at(self, objection):
+        assert hasattr(objection, "area")
+        raise NotImplementedError
+    
+    def out(self, objection):
+        assert hasattr(objection, "area")
+        raise NotImplementedError
+
+    def area(self):
+        pos = self.state.p_pos
+        return Area("circle", pos, self.size / 2.)
 
     def step(self):
         """Update state of the world"""
