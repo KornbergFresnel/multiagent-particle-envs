@@ -143,7 +143,10 @@ class Scenario(BaseScenario):
             vel_channel = np.stack(vel_channel)
             pos_channel = np.stack(pos_channel)
 
-        return np.concatenate([agent.state.p_vel, relative_pos_to_ball, obs_others, obs_ball])
+            relative_pos_to_ball = agent.state.p_pos - ball.state.p_pos
+            return np.concatenate([agent.state.p_vel, relative_pos_to_ball])
+
+            # return np.concatenate([agent.state.p_vel, relative_pos_to_ball, obs_others, obs_ball])
 
     def global_observation(self, world: World):
         ball, target = world.landmarks

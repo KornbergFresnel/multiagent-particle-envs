@@ -29,15 +29,15 @@ class InteractivePolicy(Policy):
     def action(self, obs):
         # ignore observation and just act based on keyboard events
         if self.env.discrete_action_input:
-            u = 0
+            u = [0]
             if self.move[0]:
-                u = 1
+                u = [1]
             if self.move[1]:
-                u = 2
+                u = [2]
             if self.move[2]:
-                u = 4
+                u = [4]
             if self.move[3]:
-                u = 3
+                u = [3]
         else:
             u = np.zeros(5)  # 5-d because of no-move action
             if self.move[0]:

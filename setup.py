@@ -10,4 +10,5 @@ setup(name='multiagent',
       include_package_data=True,
       zip_safe=False,
       install_requires=['gym', 'numpy', 'pyglet', 'six']
+      # FIXME: pyglet version should be 0.15.0 for gym 0.17.0
 )

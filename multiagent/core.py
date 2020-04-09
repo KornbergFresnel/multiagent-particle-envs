@@ -13,7 +13,7 @@ class AreaAPI(object):
 
     def at(self, objection):
         raise NotImplementedError
-    
+
     def out(self, objection):
         raise NotImplementedError
 
@@ -92,7 +92,7 @@ class Landmark(Entity, AreaAPI):
     def at(self, objection):
         assert hasattr(objection, "area")
         raise NotImplementedError
-    
+
     def out(self, objection):
         assert hasattr(objection, "area")
         raise NotImplementedError
@@ -127,7 +127,7 @@ class Agent(Entity):
         self.action_callback = None
         # optional replay buffer
         self.replay_buffer = None
-    
+
     def bind_callback(self, func_name, func_entity):
         assert getattr(func_name, None) is None, "Repeated function registion"
         setattr(self, func_name, func_entity)
@@ -139,7 +139,7 @@ class Agent(Entity):
         return getattr(self, func_name)(*arg_list)
 
 
-class World(object, AreaAPI):
+class World(AreaAPI):
     """Multi-agent world"""
 
     def __init__(self):
@@ -184,7 +184,7 @@ class World(object, AreaAPI):
     def at(self, objection):
         assert hasattr(objection, "area")
         raise NotImplementedError
-    
+
     def out(self, objection):
         assert hasattr(objection, "area")
         raise NotImplementedError
@@ -227,7 +227,7 @@ class World(object, AreaAPI):
         for i, agent in enumerate(self.agents):
             if agent.movable:
                 noise = np.random.randn(*agent.action.u.shape) * agent.u_noise if agent.u_noise else 0.0
-                
+
                 if agent.action.u is None:
                     agent.action.u = np.zeros(self.dim_p)
                     agent.action.c = np.zeros(self.dim_c)
